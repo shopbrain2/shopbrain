@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>ShopBrain Chat</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body, html {
+      height: 100%;
+      font-family: Arial, sans-serif;
+      background: #f5f7fb;
+    }
+
+    .chat-wrap {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 480px;
+      margin: 0 auto;
+      background: white;
+    }
+
+    .chat-header {
+      background: #111827;
+      color: white;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chat-header .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #6366f1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 15px;
+    }
+
+    .chat-header .info h2 {
+      font-size: 15px;
+    }
+
+    .chat-header .info span {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .msg {
+      max-width: 78%;
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .msg.bot {
+      background: #f3f4f6;
+      color: #111827;
+      margin-right: auto;
+      border-bottom-left-radius: 4px;
+    }
+
+    .msg.user {
+      background: #6366f1;
+      color: white;
+      margin-left: auto;
+      border-bottom-right-radius: 4px;
+    }
+
+    .msg.typing {
+      background: #f3f4f6;
+      color: #9ca3af;
+      margin-right: auto;
+      font-style: italic;
+    }
+
+    .chat-input-area {
+      padding: 12px;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat-input-area input {
+      flex: 1;
+      padding: 12px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 20px;
+      font-size: 14px;
+    }
+
+    .chat-input-area input:focus {
+      outline: none;
+      border-color: #6366f1;
+    }
+
+    .chat-input-area button {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: #111827;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .chat-input-area button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .state-msg {
+      padding: 40px 20px;
+      text-align: center;
+      color: #6b7280;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="chat-wrap">
+
+    <div class="chat-header">
+      <div class="avatar" id="avatarInitial">?</div>
+      <div class="info">
+        <h2 id="agentBusinessName">Loading...</h2>
+        <span>Powered by ShopBrain</span>
+      </div>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+      <div class="state-msg" id="stateMsg">Loading chat...</div>
+    </div>
+
+    <div class="chat-input-area">
+      <input type="text" id="chatInput" placeholder="Type your message..." disabled>
+      <button id="sendBtn" onclick="sendMessage()" disabled>➤</button>
+    </div>
+
+  </div>
+
+  <script>
+
+    // ==========================================================
+    // CONFIG — fill these in
+    // ==========================================================
+
+    const SUPABASE_URL = "https://aqxdmlyvmjmkdnqkwgot.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_3KNS1nc4-tFxz2zg_EoekQ_T7lyEARm";
+
+    // The Edge Function keeps the Gemini key hidden on the server side.
+    const CHAT_PROXY_URL = `${SUPABASE_URL}/functions/v1/chat-proxy`;
+
+    // ==========================================================
+
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let systemPrompt = "";
+    let businessName = "ShopBrain Assistant";
+    let conversationHistory = []; // { role: "user"|"model", parts: [{text}] }
+
+    // Agent is chosen via ?agent=AGENT_ID in the URL, e.g.
+    // chat.html?agent=1234-uuid-5678
+    function getAgentId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("agent");
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    // ==========================================================
+    // LOAD AGENT
+    // ==========================================================
+
+    async function loadAgent() {
+      const agentId = getAgentId();
+
+      if (!agentId) {
+        showState("No agent specified. Add ?agent=YOUR_AGENT_ID to the link.");
+        return;
+      }
+
+      const { data: agent, error } = await supabaseClient
+        .from("agents")
+        .select("name, status, system_prompt")
+        .eq("id", agentId)
+        .single();
+
+      if (error || !agent) {
+        showState("This chat assistant could not be found.");
+        return;
+      }
+
+      if (agent.status !== "active" || !agent.system_prompt) {
+        showState("This chat assistant is not active yet.");
+        return;
+      }
+
+      systemPrompt = agent.system_prompt;
+      businessName = agent.name || "ShopBrain Assistant";
+
+      document.getElementById("agentBusinessName").textContent = businessName;
+      document.getElementById("avatarInitial").textContent =
+        businessName.charAt(0).toUpperCase();
+
+      document.getElementById("chatInput").disabled = false;
+      document.getElementById("sendBtn").disabled = false;
+
+      clearMessages();
+      addMessage("bot", `Hi! I'm the assistant for ${businessName}. How can I help you today?`);
+    }
+
+    function showState(text) {
+      document.getElementById("stateMsg").textContent = text;
+    }
+
+    function clearMessages() {
+      document.getElementById("chatMessages").innerHTML = "";
+    }
+
+    // ==========================================================
+    // RENDER MESSAGES
+    // ==========================================================
+
+    function addMessage(sender, text) {
+      const box = document.getElementById("chatMessages");
+      const div = document.createElement("div");
+      div.className = "msg " + sender;
+      div.textContent = text;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function showTyping() {
+      const box = document.getElementById("chatMessages");
+      const div = document.createElement("div");
+      div.className = "msg typing";
+      div.id = "typingIndicator";
+      div.textContent = "Typing...";
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function hideTyping() {
+      const el = document.getElementById("typingIndicator");
+      if (el) el.remove();
+    }
+
+    // ==========================================================
+    // SEND MESSAGE → GEMINI
+    // ==========================================================
+
+    async function sendMessage() {
+      const input = document.getElementById("chatInput");
+      const text = input.value.trim();
+
+      if (!text) return;
+
+      input.value = "";
+      addMessage("user", text);
+
+      conversationHistory.push({ role: "user", parts: [{ text }] });
+
+      showTyping();
+
+      const sendBtn = document.getElementById("sendBtn");
+      sendBtn.disabled = true;
+      input.disabled = true;
+
+      try {
+        const reply = await callGemini();
+        hideTyping();
+        addMessage("bot", reply);
+        conversationHistory.push({ role: "model", parts: [{ text: reply }] });
+      } catch (err) {
+        hideTyping();
+        addMessage("bot", "Sorry, I'm having trouble responding right now. Please try again in a moment.");
+        console.error(err);
+      }
+
+      sendBtn.disabled = false;
+      input.disabled = false;
+      input.focus();
+    }
+
+    async function callGemini() {
+      const response = await fetch(CHAT_PROXY_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + SUPABASE_KEY
+        },
+        body: JSON.stringify({
+          agentId: getAgentId(),
+          history: conversationHistory
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Chat proxy error: " + response.status);
+      }
+
+      const data = await response.json();
+
+      if (!data.reply) {
+        throw new Error(data.error || "No reply received");
+      }
+
+      return data.reply;
+    }
+
+    document.getElementById("chatInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+
+    loadAgent();
+
+  </script>
+
+</body>
+</html>
