@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ShopBrain — Build your store, automate customer support, and grow with AI.">
+  <title>ShopBrain — Your Shop. Your AI. Your Business.</title>
+  <style>
+    :root{
+      --bg:#f7f9fc; --surface:#fff; --text:#101828; --muted:#667085;
+      --primary:#2563eb; --primary-dark:#1d4ed8; --line:#e4e7ec;
+      --dark:#0b1220; --success:#16a34a; --shadow:0 18px 50px rgba(16,24,40,.10);
+      --radius:18px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+    a{text-decoration:none;color:inherit}
+    button{font:inherit;cursor:pointer}
+    .container{width:min(1120px,92%);margin:auto}
+    header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);border-bottom:1px solid rgba(228,231,236,.8)}
+    nav{height:72px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+    .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:21px}
+    .logo-mark{width:36px;height:36px;border-radius:11px;background:var(--primary);display:grid;place-items:center;color:#fff;font-weight:900}
+    .nav-links{display:flex;align-items:center;gap:25px;color:#475467;font-size:14px}
+    .nav-links a:hover{color:var(--primary)}
+    .nav-actions{display:flex;gap:10px;align-items:center}
+    .btn{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:11px;padding:12px 18px;font-weight:700;transition:.2s}
+    .btn-primary{background:var(--primary);color:#fff}
+    .btn-primary:hover{background:var(--primary-dark);transform:translateY(-1px)}
+    .btn-secondary{background:#fff;color:var(--text);border:1px solid var(--line)}
+    .btn-secondary:hover{border-color:#b8c0cc}
+    .mobile-menu{display:none;background:none;border:0;font-size:25px}
+    .hero{padding:92px 0 70px;background:radial-gradient(circle at 80% 20%,#dbeafe 0,transparent 34%),linear-gradient(#fff,var(--bg))}
+    .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:65px;align-items:center}
+    .badge{display:inline-flex;padding:7px 11px;border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;border-radius:999px;font-size:13px;font-weight:700;margin-bottom:20px}
+    h1{font-size:clamp(42px,6vw,68px);line-height:1.03;letter-spacing:-2.5px;max-width:720px}
+    .hero p{font-size:18px;color:var(--muted);max-width:620px;margin:22px 0 30px}
+    .hero-buttons{display:flex;gap:12px;flex-wrap:wrap}
+    .trust{display:flex;gap:22px;margin-top:25px;color:#667085;font-size:13px;flex-wrap:wrap}
+    .demo{background:var(--surface);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);overflow:hidden}
+    .demo-top{padding:15px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+    .dot{width:9px;height:9px;border-radius:50%;background:#d0d5dd}
+    .demo-title{margin-left:auto;margin-right:auto;font-weight:700;font-size:14px}
+    .chat-body{padding:22px;background:#f8fafc}
+    .bubble{padding:13px 15px;border-radius:15px;margin:12px 0;max-width:86%;font-size:14px}
+    .customer{background:#e9eef8;margin-left:auto}
+    .ai{background:#fff;border:1px solid var(--line)}
+    .ai strong{display:block;margin-bottom:5px}
+    .chat-input{display:flex;gap:8px;padding:14px;border-top:1px solid var(--line);background:#fff}
+    .fake-input{flex:1;background:#f2f4f7;border-radius:10px;padding:10px;color:#98a2b3;font-size:13px}
+    .send{width:40px;border:0;border-radius:10px;background:var(--primary);color:#fff}
+    section{padding:88px 0}
+    .section-head{text-align:center;max-width:700px;margin:0 auto 45px}
+    .eyebrow{color:var(--primary);font-weight:800;text-transform:uppercase;letter-spacing:1px;font-size:12px;margin-bottom:8px}
+    h2{font-size:clamp(30px,4vw,44px);line-height:1.15;letter-spacing:-1px}
+    .section-head p{color:var(--muted);margin-top:13px}
+    .features{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+    .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:25px}
+    .icon{width:44px;height:44px;border-radius:12px;background:#eff6ff;color:var(--primary);display:grid;place-items:center;font-weight:900;margin-bottom:18px}
+    .card h3{font-size:18px;margin-bottom:7px}
+    .card p{font-size:14px;color:var(--muted)}
+    .steps{display:grid;grid-template-columns:repeat(5,1fr);gap:15px}
+    .step{padding:23px;background:#fff;border:1px solid var(--line);border-radius:16px}
+    .number{font-weight:900;color:var(--primary);font-size:14px;margin-bottom:16px}
+    .step h3{font-size:16px;margin-bottom:6px}
+    .step p{font-size:13px;color:var(--muted)}
+    .dark-section{background:var(--dark);color:#fff}
+    .dark-section .section-head p{color:#aab4c5}
+    .dark-section .card{background:#121c2e;border-color:#26344b}
+    .dark-section .card p{color:#aab4c5}
+    .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+    .plan{background:#fff;border:1px solid var(--line);border-radius:20px;padding:28px;position:relative}
+    .plan.featured{border:2px solid var(--primary);transform:translateY(-7px)}
+    .popular{position:absolute;right:18px;top:18px;background:#eff6ff;color:var(--primary);padding:5px 9px;border-radius:999px;font-size:11px;font-weight:800}
+    .plan h3{font-size:21px}
+    .price{font-size:34px;font-weight:900;margin:12px 0 5px}
+    .price span{font-size:13px;color:var(--muted);font-weight:500}
+    .plan-desc{color:var(--muted);font-size:13px;min-height:43px}
+    .plan ul{list-style:none;margin:20px 0}
+    .plan li{font-size:13px;margin:10px 0;color:#475467}
+    .plan li::before{content:"✓";color:var(--success);font-weight:900;margin-right:8px}
+    .service-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:stretch}
+    .service-big{background:#fff;border:1px solid var(--line);border-radius:22px;padding:34px}
+    .service-big h3{font-size:27px;margin:10px 0}
+    .service-big p{color:var(--muted)}
+    .service-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:25px 0}
+    .service-list div{border:1px solid var(--line);border-radius:12px;padding:12px;font-size:13px;background:#fafbfc}
+    .faq{max-width:800px;margin:auto}
+    details{background:#fff;border:1px solid var(--line);border-radius:14px;margin:10px 0;padding:18px 20px}
+    summary{font-weight:750;cursor:pointer}
+    details p{color:var(--muted);font-size:14px;padding-top:12px}
+    .cta{background:linear-gradient(135deg,#eff6ff,#fff);border:1px solid #dbeafe;border-radius:28px;padding:55px;text-align:center}
+    .cta p{color:var(--muted);max-width:600px;margin:12px auto 25px}
+    footer{background:#fff;border-top:1px solid var(--line);padding:35px 0}
+    .footer-grid{display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap}
+    .footer-links{display:flex;gap:20px;color:var(--muted);font-size:13px}
+    .copyright{color:#98a2b3;font-size:12px;margin-top:25px}
+    @media(max-width:900px){
+      .nav-links{display:none}.mobile-menu{display:block}
+      .hero-grid{grid-template-columns:1fr}.hero{padding-top:60px}
+      .features,.plans{grid-template-columns:1fr 1fr}.steps{grid-template-columns:1fr 1fr}
+      .service-grid{grid-template-columns:1fr}
+    }
+    @media(max-width:600px){
+      nav{height:64px}.nav-actions .btn-secondary{display:none}
+      .hero{padding:55px 0}.hero p{font-size:16px}
+      .features,.plans,.steps{grid-template-columns:1fr}
+      .plan.featured{transform:none}.service-list{grid-template-columns:1fr}
+      section{padding:65px 0}.cta{padding:35px 20px}
+      h1{letter-spacing:-1.8px}
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <nav>
+      <a href="index.html" class="logo">
+        <span class="logo-mark">S</span>
+        <span>ShopBrain</span>
+      </a>
+
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how">How It Works</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#services">Services</a>
+        <a href="#faq">FAQ</a>
+      </div>
+
+      <div class="nav-actions">
+        <a class="btn btn-secondary" href="platform-login.html">Login</a>
+        <a class="btn btn-primary" href="platform-login.html">Start Free</a>
+        <button class="mobile-menu" aria-label="Menu">☰</button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <div class="badge">AI-powered ecommerce platform</div>
+      <h1>Your Shop. Your AI. Your Business.</h1>
+      <p>
+        ShopBrain helps you build, manage and grow your online store with an AI
+        assistant that helps customers 24/7.
+      </p>
+
+      <div class="hero-buttons">
+        <a class="btn btn-primary" href="platform-login.html">Start Free →</a>
+        <a class="btn btn-secondary" href="#how">See How It Works</a>
+      </div>
+
+      <div class="trust">
+        <span>✓ No technical skills required</span>
+        <span>✓ Start with a free trial</span>
+        <span>✓ Mobile friendly</span>
+      </div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-top">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="demo-title">ShopBrain AI Assistant</span>
+      </div>
+      <div class="chat-body">
+        <div class="bubble customer">Is the iPhone 15 available?</div>
+        <div class="bubble ai">
+          <strong>ShopBrain AI</strong>
+          Yes. The iPhone 15 is currently available. I can also help you with
+          the price, delivery and product details.
+        </div>
+        <div class="bubble customer">How long does delivery take?</div>
+        <div class="bubble ai">
+          <strong>ShopBrain AI</strong>
+          Standard delivery takes 3–5 business days according to this shop's
+          delivery information.
+        </div>
+      </div>
+      <div class="chat-input">
+        <div class="fake-input">Ask about products, orders or delivery...</div>
+        <button class="send">→</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">Everything you need</div>
+      <h2>Run your shop smarter</h2>
+      <p>One platform for your store, customers, orders and AI assistant.</p>
+    </div>
+
+    <div class="features">
+      <div class="card"><div class="icon">AI</div><h3>AI Shop Assistant</h3><p>Answer product, price, stock, delivery and policy questions using your real shop information.</p></div>
+      <div class="card"><div class="icon">▣</div><h3>Online Store</h3><p>Create a professional storefront where customers can discover and buy your products.</p></div>
+      <div class="card"><div class="icon">+</div><h3>Product Management</h3><p>Add products, prices, stock, images, categories and variations from one dashboard.</p></div>
+      <div class="card"><div class="icon">↗</div><h3>Order Management</h3><p>Track orders, update statuses and keep customers informed from your dashboard.</p></div>
+      <div class="card"><div class="icon">◌</div><h3>Customer Messaging</h3><p>Customers can talk directly with the shop owner when they need human assistance.</p></div>
+      <div class="card"><div class="icon">⚙</div><h3>AI Training</h3><p>Teach your AI about your products, FAQs, delivery information and business policies.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="how" class="dark-section">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">Simple setup</div>
+      <h2>Go from idea to online shop</h2>
+      <p>ShopBrain keeps the setup simple so you can focus on your business.</p>
+    </div>
+
+    <div class="steps">
+      <div class="card step"><div class="number">01</div><h3>Create Your Shop</h3><p>Start your ShopBrain account and set up your business.</p></div>
+      <div class="card step"><div class="number">02</div><h3>Add Products</h3><p>Add your products, prices, stock and information.</p></div>
+      <div class="card step"><div class="number">03</div><h3>Train Your AI</h3><p>Give your assistant the knowledge it needs to help customers.</p></div>
+      <div class="card step"><div class="number">04</div><h3>Connect Your Website</h3><p>Use the ShopBrain store or connect your existing website.</p></div>
+      <div class="card step"><div class="number">05</div><h3>Start Selling</h3><p>Let customers shop while ShopBrain helps answer their questions.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">Pricing</div>
+      <h2>Choose the plan that fits your shop</h2>
+      <p>Start with a free 7-day trial, then pay once for the plan that fits. Optional Maintenance available for $5/month.</p>
+    </div>
+
+    <div class="plans">
+      <div class="plan">
+        <h3>Basic</h3>
+        <div class="price">$5 <span>one-time</span></div>
+        <p class="plan-desc">For small businesses getting started with AI.</p>
+        <ul>
+          <li>AI shop assistant</li><li>Product management</li><li>Orders</li>
+          <li>Customer messaging</li><li>AI training</li><li>Basic analytics</li>
+        </ul>
+        <a class="btn btn-secondary" style="width:100%" href="platform-login.html">Start Free</a>
+      </div>
+
+      <div class="plan featured">
+        <span class="popular">POPULAR</span>
+        <h3>Standard</h3>
+        <div class="price">$10 <span>one-time</span></div>
+        <p class="plan-desc">For growing businesses that need more power.</p>
+        <ul>
+          <li>Everything in Basic</li><li>Higher AI usage</li><li>Website builder</li>
+          <li>Advanced analytics</li><li>More customization</li><li>Priority support</li>
+        </ul>
+        <a class="btn btn-primary" style="width:100%" href="platform-login.html">Start Free</a>
+      </div>
+
+      <div class="plan">
+        <h3>Premium</h3>
+        <div class="price">$20 <span>one-time</span></div>
+        <p class="plan-desc">For serious businesses that want advanced tools.</p>
+        <ul>
+          <li>Everything in Standard</li><li>Highest AI limits</li><li>Advanced automation</li>
+          <li>Advanced analytics</li><li>Premium customization</li><li>Professional services</li>
+        </ul>
+        <a class="btn btn-secondary" style="width:100%" href="platform-login.html">Start Free</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="services">
+  <div class="container service-grid">
+    <div class="service-big">
+      <div class="eyebrow">ShopBrain Services</div>
+      <h3>Want us to build it for you?</h3>
+      <p>
+        ShopBrain gives you self-service tools, but you can also order
+        professional help when you need a custom or more advanced store.
+      </p>
+
+      <div class="service-list">
+        <div>Professional website design</div>
+        <div>Store setup</div>
+        <div>Custom website</div>
+        <div>Domain setup</div>
+        <div>Payment integration</div>
+        <div>AI setup & training</div>
+        <div>Store migration</div>
+        <div>Custom development</div>
+      </div>
+
+      <a class="btn btn-primary" href="platform-login.html">Get Professional Help →</a>
+    </div>
+
+    <div class="service-big">
+      <div class="eyebrow">Human + AI</div>
+      <h3>AI when you need it. Humans when it matters.</h3>
+      <p>
+        ShopBrain can answer routine questions automatically. When a customer
+        needs a real person, the shop owner can take over the conversation.
+      </p>
+      <br>
+      <p>
+        And when ShopBrain users need help with the platform itself, they can
+        contact the ShopBrain owner through their dashboard.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">FAQ</div>
+      <h2>Questions about ShopBrain?</h2>
+    </div>
+
+    <div class="faq">
+      <details><summary>What is ShopBrain?</summary><p>ShopBrain is an AI-powered ecommerce platform for creating and managing online shops and helping businesses communicate with customers.</p></details>
+      <details><summary>Can I try ShopBrain for free?</summary><p>Yes. New users can start with a free trial before choosing a paid plan.</p></details>
+      <details><summary>Can my customers talk to a real person?</summary><p>Yes. Customers can request human support and communicate directly with the shop owner.</p></details>
+      <details><summary>Can ShopBrain build my website?</summary><p>Yes. Shop owners can use the available website tools or request professional website services.</p></details>
+      <details><summary>Can I connect my existing website?</summary><p>ShopBrain is designed to support existing websites through its AI widget and integrations.</p></details>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="cta">
+      <div class="eyebrow">Start today</div>
+      <h2>Build a smarter online shop.</h2>
+      <p>Start with ShopBrain's free experience and add more power as your business grows.</p>
+      <a class="btn btn-primary" href="platform-login.html">Start Free →</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="logo"><span class="logo-mark">S</span><span>ShopBrain</span></div>
+      <div class="footer-links">
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#services">Services</a>
+        <a href="platform-login.html">Login</a>
+      </div>
+    </div>
+    <div class="copyright">© 2026 ShopBrain. All rights reserved.</div>
+  </div>
+</footer>
+
+<script>
+  // Mobile menu toggle
+  document.querySelector('.mobile-menu')?.addEventListener('click', () => {
+    const links = document.querySelector('.nav-links');
+    const visible = getComputedStyle(links).display !== 'none';
+    links.style.display = visible ? 'none' : 'flex';
+    links.style.flexDirection = 'column';
+    links.style.position = 'absolute';
+    links.style.top = '64px';
+    links.style.left = '0';
+    links.style.right = '0';
+    links.style.padding = '18px';
+    links.style.background = '#fff';
+    links.style.borderBottom = '1px solid #e4e7ec';
+  });
+</script>
+
+</body>
+</html>
