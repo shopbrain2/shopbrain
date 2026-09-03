@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopBrain - Order Training</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f7fb;
+      color: #111827;
+    }
+
+    .header {
+      background: #111827;
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo { font-size: 20px; font-weight: bold; }
+    .logo span { color: #6366f1; }
+
+    .header button {
+      background: transparent;
+      border: 1px solid #374151;
+      color: #fca5a5;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .wrap {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .error, .success {
+      margin-bottom: 18px;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .error { background: #fee2e2; color: #991b1b; }
+    .success { background: #dcfce7; color: #166534; }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      padding: 22px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 17px;
+      margin-bottom: 4px;
+    }
+
+    .card .desc {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 16px;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: capitalize;
+    }
+
+    .pending_payment { background: #fef3c7; color: #92400e; }
+    .payment_verified { background: #dbeafe; color: #1e40af; }
+    .payment_rejected { background: #fee2e2; color: #991b1b; }
+    .in_training { background: #ede9fe; color: #5b21b6; }
+    .completed { background: #dcfce7; color: #166534; }
+    .scraping { background: #e0f2fe; color: #075985; }
+    .information_review { background: #fef9c3; color: #854d0e; }
+    .testing { background: #ede9fe; color: #5b21b6; }
+    .approved { background: #dbeafe; color: #1e40af; }
+    .active { background: #dcfce7; color: #166534; }
+    .maintenance { background: #f3e8ff; color: #6b21a8; }
+    .suspended { background: #fee2e2; color: #991b1b; }
+
+    .order-row {
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    .order-row:last-child { border-bottom: none; }
+
+    .tier-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .tier-card {
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 14px;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .tier-card.selected {
+      border-color: #6366f1;
+      background: #eef2ff;
+    }
+
+    .tier-card .tier-name {
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .tier-card .tier-price {
+      font-size: 18px;
+      font-weight: bold;
+      color: #6366f1;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: bold;
+      color: #374151;
+      margin-bottom: 5px;
+      margin-top: 14px;
+    }
+
+    label:first-of-type { margin-top: 0; }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #6366f1;
+    }
+
+    textarea { min-height: 90px; resize: vertical; }
+
+    .faq-row, .product-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .faq-row input, .product-row input {
+      margin: 0;
+    }
+
+    .small-btn {
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      background: white;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      background: #111827;
+      color: white;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .file-input {
+      border: 2px dashed #d1d5db;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .file-input input { display: none; }
+
+    .file-name {
+      font-size: 13px;
+      color: #6366f1;
+      margin-top: 8px;
+      display: none;
+    }
+
+    .empty {
+      color: #9ca3af;
+      font-size: 14px;
+      text-align: center;
+      padding: 10px 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="header">
+    <div class="logo">Shop<span>Brain</span></div>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <div class="wrap">
+
+    <div id="errorBox" class="error"></div>
+    <div id="successBox" class="success"></div>
+
+    <div class="card">
+      <h2>Your Training Orders</h2>
+      <div class="desc">Track the status of your submitted orders</div>
+      <div id="ordersList">
+        <div class="empty">Loading...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Submit a New Training Order</h2>
+      <div class="desc">Choose a tier, tell us about your business, and upload your payment receipt.</div>
+
+      <label>Choose a Tier</label>
+      <div class="tier-grid">
+        <div class="tier-card" data-tier="free_trial" data-price="0" onclick="selectTier(this)">
+          <div class="tier-name">Free Trial</div>
+          <div class="tier-price">$0</div>
+          <div style="font-size:11px;color:#6b7280;">7 days</div>
+        </div>
+        <div class="tier-card" data-tier="basic" data-price="5" onclick="selectTier(this)">
+          <div class="tier-name">Basic</div>
+          <div class="tier-price">$5</div>
+        </div>
+        <div class="tier-card" data-tier="standard" data-price="10" onclick="selectTier(this)">
+          <div class="tier-name">Standard</div>
+          <div class="tier-price">$10</div>
+        </div>
+        <div class="tier-card" data-tier="premium" data-price="20" onclick="selectTier(this)">
+          <div class="tier-name">Premium</div>
+          <div class="tier-price">$20</div>
+        </div>
+      </div>
+
+      <div style="margin-top:10px;">
+        <label style="display:flex;align-items:center;gap:8px;margin-top:0;">
+          <input type="checkbox" id="maintenanceAddon" style="width:auto;margin:0;">
+          Add Maintenance - $5/month (optional, ongoing updates)
+        </label>
+      </div>
+
+      <label>Business Name</label>
+      <input type="text" id="businessName" placeholder="e.g. Abdull's Gadget Store">
+
+      <label>Your Website URL</label>
+      <input type="text" id="websiteUrl" placeholder="https://yourstore.com">
+      <div style="font-size:12px;color:#6b7280;margin-top:4px;">
+        We'll automatically scan your site for products, FAQs, and policies - you don't need to type them in yourself.
+      </div>
+
+      <label>Short Business Description</label>
+      <textarea id="businessDescription" placeholder="What do you sell? Who are your customers?"></textarea>
+
+      <label>Special Instructions (optional)</label>
+      <textarea id="escalationInfo" placeholder="Anything specific you want your AI to know or do"></textarea>
+
+      <div style="margin-top:18px;">
+        <button type="button" class="small-btn" onclick="toggleExtraDetails()" id="extraDetailsToggle">+ Add Extra Details Manually (optional)</button>
+      </div>
+
+      <div id="extraDetailsSection" style="display:none;margin-top:14px;">
+
+        <label>Products / Services</label>
+        <div id="productsContainer"></div>
+        <button type="button" class="small-btn" onclick="addProductRow()">+ Add Product</button>
+
+        <label>FAQs</label>
+        <div id="faqsContainer"></div>
+        <button type="button" class="small-btn" onclick="addFaqRow()">+ Add FAQ</button>
+
+        <label>Shipping Policy</label>
+        <textarea id="shippingPolicy"></textarea>
+
+        <label>Returns Policy</label>
+        <textarea id="returnsPolicy"></textarea>
+
+        <label>Payment Methods</label>
+        <textarea id="paymentPolicy"></textarea>
+
+        <label>Tone Preference</label>
+        <input type="text" id="tonePreference" placeholder="e.g. friendly and casual">
+
+      </div>
+
+      <label style="margin-top:20px;">Payment Receipt (not required for Free Trial)</label>
+      <div class="file-input" onclick="document.getElementById('receiptFile').click()" id="receiptUploadBox">
+        <input type="file" id="receiptFile" accept="image/*" onchange="handleFileSelect()">
+        <div>Tap to upload your payment receipt screenshot</div>
+        <div class="file-name" id="fileName"></div>
+      </div>
+
+      <label>Reference / Note (optional)</label>
+      <input type="text" id="receiptNote" placeholder="e.g. Payoneer transaction ID">
+
+      <button class="submit-btn" id="submitOrderBtn" onclick="submitOrder()">Submit Training Order</button>
+
+    </div>
+
+  </div>
+
+  <script>
+
+    const SUPABASE_URL = "https://aqxdmlyvmjmkdnqkwgot.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_3KNS1nc4-tFxz2zg_EoekQ_T7lyEARm";
+
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const SCRAPE_URL = `${SUPABASE_URL}/functions/v1/scrape-website`;
+
+    async function triggerScrape(orderId, websiteUrl) {
+      try {
+        await fetch(SCRAPE_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + SUPABASE_KEY
+          },
+          body: JSON.stringify({ orderId, websiteUrl })
+        });
+      } catch (err) {
+        // Non-fatal - admin can retry the scrape manually from the dashboard
+        console.error("Scrape trigger failed", err);
+      }
+    }
+
+    let currentUser = null;
+    let selectedTier = null;
+    let selectedPrice = null;
+    let selectedReceiptFile = null;
+
+    function showError(message) {
+      const box = document.getElementById("errorBox");
+      box.textContent = message;
+      box.style.display = "block";
+      document.getElementById("successBox").style.display = "none";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function showSuccess(message) {
+      const box = document.getElementById("successBox");
+      box.textContent = message;
+      box.style.display = "block";
+      document.getElementById("errorBox").style.display = "none";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    async function requireLogin() {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) {
+        window.location.href = "customer-login.html";
+        return null;
+      }
+      return user;
+    }
+
+    async function logout() {
+      await supabaseClient.auth.signOut();
+      window.location.href = "customer-login.html";
+    }
+
+    async function loadOrders() {
+      const { data: orders, error } = await supabaseClient
+        .from("training_orders")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: false });
+
+      const listEl = document.getElementById("ordersList");
+
+      if (error) {
+        listEl.innerHTML = `<div class="empty">Unable to load orders.</div>`;
+        return;
+      }
+
+      if (!orders || orders.length === 0) {
+        listEl.innerHTML = `<div class="empty">No orders yet - submit one below.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = orders.map(o => {
+        const status = (o.status || "").replaceAll("_", " ");
+        const date = new Date(o.created_at).toLocaleDateString();
+        return `
+          <div class="order-row">
+            <div>
+              <strong>${escapeHtml(o.business_name || "Unnamed")}</strong><br>
+              <span style="color:#6b7280;font-size:12px;">${escapeHtml(o.tier)} - $${Number(o.price_usd || 0).toFixed(2)} - ${date}</span>
+            </div>
+            <span class="status-badge ${o.status}">${escapeHtml(status)}</span>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function selectTier(el) {
+      document.querySelectorAll(".tier-card").forEach(c => c.classList.remove("selected"));
+      el.classList.add("selected");
+      selectedTier = el.dataset.tier;
+      selectedPrice = parseFloat(el.dataset.price);
+    }
+
+    function toggleExtraDetails() {
+      const section = document.getElementById("extraDetailsSection");
+      const btn = document.getElementById("extraDetailsToggle");
+      const isHidden = section.style.display === "none";
+      section.style.display = isHidden ? "block" : "none";
+      btn.textContent = isHidden ? "- Hide Extra Details" : "+ Add Extra Details Manually (optional)";
+    }
+
+    let productCount = 0;
+    let faqCount = 0;
+
+    function addProductRow() {
+      productCount++;
+      const id = "product_" + productCount;
+      const container = document.getElementById("productsContainer");
+      const div = document.createElement("div");
+      div.className = "product-row";
+      div.id = id;
+      div.innerHTML = `
+        <input type="text" placeholder="Product name" class="prod-name" style="flex:1;">
+        <input type="text" placeholder="Price" class="prod-price" style="width:70px;">
+        <button type="button" class="small-btn" onclick="document.getElementById('${id}').remove()">X</button>
+      `;
+      container.appendChild(div);
+    }
+
+    function addFaqRow() {
+      faqCount++;
+      const id = "faq_" + faqCount;
+      const container = document.getElementById("faqsContainer");
+      const div = document.createElement("div");
+      div.className = "faq-row";
+      div.id = id;
+      div.style.flexDirection = "column";
+      div.innerHTML = `
+        <input type="text" placeholder="Question" class="faq-q" style="margin-bottom:6px;">
+        <div style="display:flex;gap:8px;">
+          <input type="text" placeholder="Answer" class="faq-a" style="flex:1;">
+          <button type="button" class="small-btn" onclick="document.getElementById('${id}').remove()">X</button>
+        </div>
+      `;
+      container.appendChild(div);
+    }
+
+    addProductRow();
+    addFaqRow();
+
+    function handleFileSelect() {
+      const fileInput = document.getElementById("receiptFile");
+      const nameEl = document.getElementById("fileName");
+
+      if (fileInput.files && fileInput.files[0]) {
+        selectedReceiptFile = fileInput.files[0];
+        nameEl.textContent = "Selected: " + selectedReceiptFile.name;
+        nameEl.style.display = "block";
+      }
+    }
+
+    async function submitOrder() {
+      document.getElementById("errorBox").style.display = "none";
+      document.getElementById("successBox").style.display = "none";
+
+      if (!selectedTier) {
+        showError("Please choose a tier.");
+        return;
+      }
+
+      const businessName = document.getElementById("businessName").value.trim();
+
+      if (!businessName) {
+        showError("Please enter your business name.");
+        return;
+      }
+
+      const websiteUrl = document.getElementById("websiteUrl").value.trim();
+      const isFreeTrial = selectedTier === "free_trial";
+
+      if (!isFreeTrial && !selectedReceiptFile) {
+        showError("Please upload your payment receipt.");
+        return;
+      }
+
+      const submitBtn = document.getElementById("submitOrderBtn");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting...";
+
+      try {
+        let filePath = null;
+
+        if (selectedReceiptFile) {
+          const fileExt = selectedReceiptFile.name.split(".").pop();
+          filePath = `${currentUser.id}/${Date.now()}.${fileExt}`;
+
+          const { error: uploadError } = await supabaseClient
+            .storage
+            .from("receipts")
+            .upload(filePath, selectedReceiptFile);
+
+          if (uploadError) {
+            showError("Failed to upload receipt: " + uploadError.message);
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Submit Training Order";
+            return;
+          }
+        }
+
+        const products = [];
+        document.querySelectorAll(".product-row").forEach(row => {
+          const name = row.querySelector(".prod-name").value.trim();
+          const price = row.querySelector(".prod-price").value.trim();
+          if (name) products.push({ name, price, description: "" });
+        });
+
+        const faqs = [];
+        document.querySelectorAll(".faq-row").forEach(row => {
+          const q = row.querySelector(".faq-q").value.trim();
+          const a = row.querySelector(".faq-a").value.trim();
+          if (q && a) faqs.push({ question: q, answer: a });
+        });
+
+        const maintenanceAddon = document.getElementById("maintenanceAddon").checked;
+
+        // Free trial skips payment entirely; paid tiers start pending payment
+        const initialStatus = isFreeTrial ? "information_review" : "pending_payment";
+
+        const { data: newOrder, error: insertError } = await supabaseClient
+          .from("training_orders")
+          .insert({
+            user_id: currentUser.id,
+            tier: selectedTier,
+            price_usd: selectedPrice,
+            status: initialStatus,
+            maintenance_addon: maintenanceAddon,
+            business_name: businessName,
+            business_description: document.getElementById("businessDescription").value.trim(),
+            website_url: websiteUrl,
+            products: JSON.stringify(products),
+            faqs: JSON.stringify(faqs),
+            shipping_policy: document.getElementById("shippingPolicy").value.trim(),
+            returns_policy: document.getElementById("returnsPolicy").value.trim(),
+            payment_policy: document.getElementById("paymentPolicy").value.trim(),
+            tone_preference: document.getElementById("tonePreference").value.trim(),
+            escalation_info: document.getElementById("escalationInfo").value.trim(),
+            receipt_image_url: filePath,
+            receipt_note: document.getElementById("receiptNote").value.trim()
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          showError("Failed to submit order: " + insertError.message);
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Submit Training Order";
+          return;
+        }
+
+        // If they gave a website URL and this order can start being scraped now
+        // (free trial goes straight to scraping; paid tiers scrape once payment
+        // is verified, triggered from the admin side)
+        if (websiteUrl && isFreeTrial) {
+          triggerScrape(newOrder.id, websiteUrl);
+        }
+
+        showSuccess(isFreeTrial
+          ? "Free trial started! We're scanning your website now."
+          : "Order submitted! We'll verify your payment and begin training soon.");
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Training Order";
+
+        loadOrders();
+
+      } catch (err) {
+        showError("Something went wrong. Please try again.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Training Order";
+      }
+    }
+
+    (async function init() {
+      currentUser = await requireLogin();
+      if (!currentUser) return;
+      loadOrders();
+    })();
+
+  </script>
+
+</body>
+</html>
