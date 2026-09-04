@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopBrain - My Shop</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f7fb;
+      color: #111827;
+    }
+
+    .layout { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: 230px;
+      background: #111827;
+      color: white;
+      padding: 22px 14px;
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      overflow-y: auto;
+    }
+
+    .logo { font-size: 21px; font-weight: bold; padding: 0 10px 20px; }
+    .logo span { color: #6366f1; }
+
+    .nav { display: flex; flex-direction: column; gap: 4px; }
+
+    .nav a {
+      border: none;
+      background: transparent;
+      color: #d1d5db;
+      padding: 11px 12px;
+      text-align: left;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      text-decoration: none;
+      display: block;
+    }
+
+    .nav a:hover, .nav a.active { background: #1f2937; color: white; }
+
+    .nav-section-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: #6b7280;
+      padding: 14px 12px 4px;
+      letter-spacing: 0.5px;
+    }
+
+    .logout { margin-top: 20px; }
+    .logout button {
+      width: 100%;
+      padding: 11px;
+      border: 1px solid #374151;
+      background: transparent;
+      color: #fca5a5;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .main {
+      margin-left: 230px;
+      width: calc(100% - 230px);
+      padding: 26px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .topbar h1 { font-size: 25px; }
+
+    .plan-badge {
+      background: white;
+      border: 1px solid #e5e7eb;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: bold;
+      color: #6366f1;
+    }
+
+    .error {
+      margin-bottom: 18px;
+      padding: 14px;
+      background: #fee2e2;
+      color: #991b1b;
+      border-radius: 8px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .stat {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .stat-title { font-size: 11px; color: #6b7280; margin-bottom: 6px; text-transform: uppercase; }
+    .stat-number { font-size: 22px; font-weight: bold; }
+
+    .card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+
+    .card h2 { font-size: 16px; margin-bottom: 14px; }
+
+    .empty { color: #9ca3af; font-size: 13px; text-align: center; padding: 16px 0; }
+
+    .order-row, .alert-row {
+      padding: 11px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .order-row:last-child, .alert-row:last-child { border-bottom: none; }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: capitalize;
+      background: #f3f4f6;
+      color: #4b5563;
+    }
+
+    .alert-box {
+      background: #fef9c3;
+      color: #854d0e;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .shop-link-box {
+      background: #eef2ff;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 13px;
+      color: #4338ca;
+      word-break: break-all;
+    }
+
+    @media (max-width: 800px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 700px) {
+      .sidebar {
+        width: 62px;
+        padding: 18px 6px;
+      }
+      .logo { font-size: 0; text-align: center; padding: 0 0 20px; }
+      .logo span { font-size: 20px; }
+      .nav a { text-align: center; font-size: 0; }
+      .nav a::first-letter { font-size: 17px; }
+      .nav-section-label { display: none; }
+      .logout button { font-size: 0; }
+      .logout button::before { content: "↪"; font-size: 18px; }
+      .main { margin-left: 62px; width: calc(100% - 62px); padding: 16px; }
+      .topbar h1 { font-size: 20px; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="logo">Shop<span>Brain</span></div>
+
+    <div class="nav">
+      <a href="shop-dashboard.html" class="active">📊 Overview</a>
+      <a href="shop-settings.html">🏪 My Shop</a>
+      <a href="products.html">📦 Products</a>
+      <a href="shop-orders.html">🧾 Orders</a>
+      <a href="customers.html">👥 Customers</a>
+
+      <div class="nav-section-label">AI</div>
+      <a href="ai-training.html">🤖 AI Assistant</a>
+      <a href="conversations.html">💬 Conversations</a>
+
+      <div class="nav-section-label">Store</div>
+      <a href="website-builder.html">🌐 Website</a>
+      <a href="widget-settings.html">🧩 Widget</a>
+      <a href="shop-analytics.html">📈 Analytics</a>
+
+      <div class="nav-section-label">Account</div>
+      <a href="services.html">🛠️ Services</a>
+      <a href="billing.html">💳 Billing</a>
+      <a href="shop-settings.html">⚙️ Settings</a>
+      <a href="platform-support.html">🆘 Chat with ShopBrain</a>
+    </div>
+
+    <div class="logout">
+      <button onclick="logout()">Logout</button>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <div id="errorBox" class="error"></div>
+
+    <div class="topbar">
+      <div>
+        <h1 id="shopNameHeading">Loading...</h1>
+        <p style="color:#6b7280;margin-top:4px;font-size:13px;" id="shopUrlLine"></p>
+      </div>
+      <div class="plan-badge" id="planBadge">-</div>
+    </div>
+
+    <div id="alertsArea"></div>
+
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-title">Products</div><div class="stat-number" id="statProducts">0</div></div>
+      <div class="stat"><div class="stat-title">Orders</div><div class="stat-number" id="statOrders">0</div></div>
+      <div class="stat"><div class="stat-title">Revenue</div><div class="stat-number" id="statRevenue">$0</div></div>
+      <div class="stat"><div class="stat-title">Customers</div><div class="stat-number" id="statCustomers">0</div></div>
+      <div class="stat"><div class="stat-title">AI Conversations</div><div class="stat-number" id="statConversations">0</div></div>
+      <div class="stat"><div class="stat-title">AI Status</div><div class="stat-number" id="statAiStatus" style="font-size:15px;">-</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Your Shop Link</h2>
+      <div class="shop-link-box" id="shopLinkBox">-</div>
+    </div>
+
+    <div class="card">
+      <h2>Recent Orders</h2>
+      <div id="recentOrders"><div class="empty">No orders yet.</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Recent Customer Conversations</h2>
+      <div id="recentConversations"><div class="empty">No conversations yet.</div></div>
+    </div>
+
+  </main>
+
+</div>
+
+<script>
+
+  const SUPABASE_URL = "https://aqxdmlyvmjmkdnqkwgot.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_3KNS1nc4-tFxz2zg_EoekQ_T7lyEARm";
+
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let currentUser = null;
+  let currentShop = null;
+
+  function showError(message) {
+    const box = document.getElementById("errorBox");
+    box.textContent = message;
+    box.style.display = "block";
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  async function logout() {
+    await supabaseClient.auth.signOut();
+    window.location.href = "platform-login.html";
+  }
+
+  async function loadDashboard() {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+
+    if (!user) {
+      window.location.href = "platform-login.html";
+      return;
+    }
+
+    currentUser = user;
+
+    const { data: shop, error: shopError } = await supabaseClient
+      .from("shops")
+      .select("*, plans:plan_id (display_name)")
+      .eq("owner_id", user.id)
+      .maybeSingle();
+
+    if (shopError || !shop) {
+      window.location.href = "onboarding.html";
+      return;
+    }
+
+    currentShop = shop;
+
+    document.getElementById("shopNameHeading").textContent = shop.name;
+    document.getElementById("shopUrlLine").textContent = `shopbrain.com/shop/${shop.slug}`;
+    document.getElementById("planBadge").textContent = shop.plans?.display_name || shop.plan_status;
+    document.getElementById("shopLinkBox").textContent = window.location.origin + window.location.pathname.replace("shop-dashboard.html", "storefront.html?shop=" + shop.slug);
+
+    // Products count
+    const { count: productCount } = await supabaseClient
+      .from("products")
+      .select("*", { count: "exact", head: true })
+      .eq("shop_id", shop.id);
+
+    document.getElementById("statProducts").textContent = productCount || 0;
+
+    // Orders
+    const { data: orders } = await supabaseClient
+      .from("orders")
+      .select("*")
+      .eq("shop_id", shop.id)
+      .order("created_at", { ascending: false });
+
+    const orderList = orders || [];
+    document.getElementById("statOrders").textContent = orderList.length;
+
+    const revenue = orderList
+      .filter(o => o.payment_status === "paid")
+      .reduce((sum, o) => sum + Number(o.total || 0), 0);
+    document.getElementById("statRevenue").textContent = "$" + revenue.toFixed(2);
+
+    renderRecentOrders(orderList.slice(0, 5));
+
+    // Customers count
+    const { count: customerCount } = await supabaseClient
+      .from("shop_customers")
+      .select("*", { count: "exact", head: true })
+      .eq("shop_id", shop.id);
+
+    document.getElementById("statCustomers").textContent = customerCount || 0;
+
+    // AI agent status
+    const { data: agent } = await supabaseClient
+      .from("ai_agents")
+      .select("*")
+      .eq("shop_id", shop.id)
+      .maybeSingle();
+
+    document.getElementById("statAiStatus").textContent = agent ? agent.status : "not set up";
+
+    // Conversations
+    const { data: conversations } = await supabaseClient
+      .from("conversations")
+      .select("*")
+      .eq("shop_id", shop.id)
+      .order("updated_at", { ascending: false });
+
+    const convoList = conversations || [];
+    document.getElementById("statConversations").textContent = convoList.length;
+
+    renderRecentConversations(convoList.slice(0, 5));
+
+    // Alerts
+    renderAlerts(orderList, convoList);
+  }
+
+  function renderRecentOrders(orders) {
+    const el = document.getElementById("recentOrders");
+
+    if (orders.length === 0) {
+      el.innerHTML = `<div class="empty">You don't have any orders yet.</div>`;
+      return;
+    }
+
+    el.innerHTML = orders.map(o => `
+      <div class="order-row">
+        <div>
+          <strong>${escapeHtml(o.order_number)}</strong><br>
+          <span style="color:#6b7280;">${escapeHtml(o.customer_name)} - $${Number(o.total || 0).toFixed(2)}</span>
+        </div>
+        <span class="status-badge">${escapeHtml((o.status || "").replaceAll("_", " "))}</span>
+      </div>
+    `).join("");
+  }
+
+  function renderRecentConversations(conversations) {
+    const el = document.getElementById("recentConversations");
+
+    if (conversations.length === 0) {
+      el.innerHTML = `<div class="empty">No customer conversations yet.</div>`;
+      return;
+    }
+
+    el.innerHTML = conversations.map(c => `
+      <div class="order-row">
+        <div>${escapeHtml(c.kind.replaceAll("_", " "))}</div>
+        <span class="status-badge">${escapeHtml((c.status || "").replaceAll("_", " "))}</span>
+      </div>
+    `).join("");
+  }
+
+  function renderAlerts(orders, conversations) {
+    const area = document.getElementById("alertsArea");
+    const alerts = [];
+
+    const pendingOrders = orders.filter(o => o.status === "pending").length;
+    if (pendingOrders > 0) {
+      alerts.push(`You have ${pendingOrders} new order${pendingOrders === 1 ? "" : "s"} to confirm.`);
+    }
+
+    const openConvos = conversations.filter(c => c.status === "open").length;
+    if (openConvos > 0) {
+      alerts.push(`You have ${openConvos} open customer conversation${openConvos === 1 ? "" : "s"}.`);
+    }
+
+    area.innerHTML = alerts.map(a => `<div class="alert-box">${escapeHtml(a)}</div>`).join("");
+  }
+
+  loadDashboard();
+
+</script>
+
+</body>
+</html>
