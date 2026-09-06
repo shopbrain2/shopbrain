@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Login — ShopBrain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../sb-config.js"></script>
+<style>
+  :root{
+    --paper:#F7F7F4; --ink:#14171C; --ink-soft:#4B5058; --line:#DDDCD5;
+    --cobalt:#2F5FFF; --orange:#FF6B45; --orange-dim:#FFEDE6; --white:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--ink);color:var(--ink);font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;margin:0 0 6px;color:var(--ink);}
+  p{margin:0;}
+  .card{background:var(--white);border-radius:16px;padding:34px 30px;max-width:380px;width:100%;}
+  .tag{display:inline-flex;align-items:center;gap:7px;background:#2A2E36;color:#B8BBC2;padding:5px 12px;border-radius:100px;font-size:12px;font-weight:600;margin-bottom:16px;}
+  .lead{color:var(--ink-soft);font-size:13.5px;margin-bottom:24px;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--ink);}
+  .field input{width:100%;border:1.5px solid var(--line);border-radius:8px;padding:11px 13px;font-family:'Inter',sans-serif;font-size:14.5px;color:var(--ink);background:var(--paper);}
+  .field input:focus{outline:none;border-color:var(--cobalt);}
+  .btn{width:100%;padding:12px 20px;border-radius:8px;font-family:'Inter',sans-serif;font-weight:600;font-size:15px;cursor:pointer;border:none;background:var(--ink);color:var(--white);}
+  .btn:disabled{opacity:0.6;}
+  .error-box{background:var(--orange-dim);color:#B5431F;border:1px solid rgba(255,107,69,0.35);border-radius:8px;padding:11px 14px;font-size:13px;margin-bottom:16px;display:none;}
+  .error-box.show{display:block;}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="tag">🔒 Admin Only</div>
+  <h1>ShopBrain Admin</h1>
+  <p class="lead">This area is restricted to authorized ShopBrain administrators.</p>
+  <div class="error-box" id="loginError"></div>
+  <form id="loginForm" onsubmit="handleLogin(event)">
+    <div class="field"><label>Email</label><input type="email" id="loginEmail" required></div>
+    <div class="field"><label>Password</label><input type="password" id="loginPassword" required></div>
+    <button type="submit" class="btn" id="loginBtn">Log In</button>
+  </form>
+</div>
+
+<script>
+  function showError(msg){
+    const el = document.getElementById('loginError');
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+
+  async function handleLogin(e){
+    e.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true; btn.textContent = 'Checking…';
+
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){
+      showError(error.message);
+      btn.disabled = false; btn.textContent = 'Log In';
+      return;
+    }
+
+    const { data: adminRow } = await sb.from('admins').select('id').eq('id', data.user.id).maybeSingle();
+    if(!adminRow){
+      showError('This account is not authorized as an admin.');
+      await sb.auth.signOut();
+      btn.disabled = false; btn.textContent = 'Log In';
+      return;
+    }
+
+    window.location.href = 'index.html';
+  }
+
+  (async () => {
+    const { data: { session } } = await sb.auth.getSession();
+    if(session){
+      const { data: adminRow } = await sb.from('admins').select('id').eq('id', session.user.id).maybeSingle();
+      if(adminRow) window.location.href = 'index.html';
+    }
+  })();
+</script>
+
+</body>
+</html>
