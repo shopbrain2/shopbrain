@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connecting Shopify — ShopBrain</title>
+<script src="sb-config.js"></script>
+<style>
+  body{font-family:-apple-system,sans-serif;max-width:480px;margin:0 auto;padding:60px 24px;background:#F7F7F4;color:#14171C;text-align:center;}
+  h1{font-size:20px;margin-bottom:12px;}
+  p{color:#4B5058;font-size:14px;line-height:1.5;margin-bottom:20px;}
+  .spinner{width:36px;height:36px;border:3px solid #DDDCD5;border-top-color:#2F5FFF;border-radius:50%;margin:0 auto 20px;animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .btn{display:inline-block;background:#2F5FFF;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;}
+  .error{color:#B5431F;background:#FFEDE6;border-radius:8px;padding:14px 16px;font-size:13px;text-align:left;margin-bottom:20px;}
+</style>
+</head>
+<body>
+  <div id="content">
+    <div class="spinner"></div>
+    <h1>Connecting your Shopify store…</h1>
+    <p>This should only take a few seconds.</p>
+  </div>
+
+<script>
+  (async function(){
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const shop = params.get('shop');
+    const state = params.get('state');
+
+    const content = document.getElementById('content');
+
+    function showError(msg){
+      content.innerHTML = `
+        <h1>Something went wrong</h1>
+        <div class="error">${msg}</div>
+        <a href="account.html?view=connect" class="btn">Back to Dashboard</a>
+      `;
+    }
+
+    if(!code || !shop || !state){
+      showError('Missing information from Shopify — please try connecting again from your dashboard.');
+      return;
+    }
+
+    // state was built as "<agentId>.<nonce>" before redirecting to Shopify — verify the
+    // nonce matches what we stashed, to make sure this callback wasn't forged.
+    const [agentId, nonce] = state.split('.');
+    const savedNonce = sessionStorage.getItem('shopify_oauth_nonce');
+    if(!agentId || !nonce || nonce !== savedNonce){
+      showError('This connection link is invalid or expired — please try connecting again from your dashboard.');
+      return;
+    }
+    sessionStorage.removeItem('shopify_oauth_nonce');
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/shopify_oauth`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({ code, shop, agent_id: agentId })
+      });
+      const data = await res.json();
+      if(!res.ok || data.error){
+        showError((data.error || 'Connection failed.') + (data.details ? '<br><br>' + data.details.slice(0,200) : ''));
+        return;
+      }
+      content.innerHTML = `
+        <h1>Connected! 🎉</h1>
+        <p>Your ShopBrain AI is now installed on <b>${shop}</b> — it'll appear automatically on your storefront.</p>
+        <a href="account.html?view=connect" class="btn">Back to Dashboard</a>
+      `;
+    } catch (e) {
+      showError('Network error: ' + e.message);
+    }
+  })();
+</script>
+</body>
+</html>
